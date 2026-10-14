@@ -46,17 +46,18 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git update-index --cacheinfo "160000,$SHA,$SERVICE"
-          # .gitmodules sets ignore = all, which would otherwise hide the gitlink change.
-          if git diff --cached --quiet --ignore-submodules=none; then
-            echo "$SERVICE already at $SHA"
-            exit 0
-          fi
-          git commit -m "chore($SERVICE): update to $TAG"
-
-          # Runs for different services can race; rebase onto whichever landed first.
+          # Runs for different services can race, so a rejected push starts over from the
+          # latest main. Rebasing would drop the commit: with ignore = all in .gitmodules,
+          # gitlink-only commits all look empty and get skipped as already applied.
           for attempt in 1 2 3 4 5; do
-            git push && exit 0
-            git pull --rebase
+            git fetch origin main
+            git reset --hard origin/main
+            git update-index --cacheinfo "160000,$SHA,$SERVICE"
+            if git diff --cached --quiet --ignore-submodules=none; then
+              echo "$SERVICE already at $SHA"
+              exit 0
+            fi
+            git commit -m "chore($SERVICE): update to $TAG"
+            git push origin HEAD:main && exit 0
           done
           exit 1
