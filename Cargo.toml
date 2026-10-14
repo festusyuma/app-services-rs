@@ -1,0 +1,6 @@
+[workspace]
+resolver = "3"
+members = ["file", "auth", "email", "env", "shared", "payment"]
+
+[patch."https://github.com/festusyuma/app-shared-rs.git"]
+shared = { path = "shared" }

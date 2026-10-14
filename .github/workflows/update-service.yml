@@ -1,0 +1,50 @@
+name: Update service
+
+on:
+  repository_dispatch:
+    types: [service-tagged]
+
+concurrency:
+  group: update-${{ github.event.client_payload.path }}
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Point submodule at tagged commit
+        env:
+          SERVICE: ${{ github.event.client_payload.path }}
+          TAG: ${{ github.event.client_payload.tag }}
+          SHA: ${{ github.event.client_payload.sha }}
+        run: |
+          set -euo pipefail
+          if [ "$(git config -f .gitmodules --get "submodule.$SERVICE.path" || true)" != "$SERVICE" ]; then
+            echo "::error::Unknown service '$SERVICE'"
+            exit 1
+          fi
+          if ! [[ "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Invalid commit sha '$SHA'"
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git update-index --cacheinfo "160000,$SHA,$SERVICE"
+          if git diff --cached --quiet; then
+            echo "$SERVICE already at $SHA"
+            exit 0
+          fi
+          git commit -m "chore($SERVICE): update to $TAG"
+
+          # Runs for different services can race; rebase onto whichever landed first.
+          for attempt in 1 2 3 4 5; do
+            git push && exit 0
+            git pull --rebase
+          done
+          exit 1

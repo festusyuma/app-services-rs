@@ -1,0 +1,24 @@
+[submodule "auth"]
+	path = auth
+	url = https://github.com/festusyuma/app-auth-rs.git
+	ignore = all
+[submodule "email"]
+	path = email
+	url = https://github.com/festusyuma/app-email-rs.git
+	ignore = all
+[submodule "env"]
+	path = env
+	url = https://github.com/festusyuma/app-env-rs.git
+	ignore = all
+[submodule "file"]
+	path = file
+	url = https://github.com/festusyuma/app-file-rs.git
+	ignore = all
+[submodule "payment"]
+	path = payment
+	url = https://github.com/festusyuma/app-payment-rs.git
+	ignore = all
+[submodule "shared"]
+	path = shared
+	url = https://github.com/festusyuma/app-shared-rs.git
+	ignore = all
