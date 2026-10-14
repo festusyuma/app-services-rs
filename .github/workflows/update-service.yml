@@ -3,9 +3,20 @@ name: Update service
 on:
   repository_dispatch:
     types: [service-tagged]
+  workflow_dispatch:
+    inputs:
+      path:
+        description: Service folder
+        required: true
+      tag:
+        description: Tag name
+        required: true
+      sha:
+        description: Commit the tag points to
+        required: true
 
 concurrency:
-  group: update-${{ github.event.client_payload.path }}
+  group: update-${{ github.event.client_payload.path || inputs.path }}
 
 permissions:
   contents: write
@@ -18,9 +29,9 @@ jobs:
 
       - name: Point submodule at tagged commit
         env:
-          SERVICE: ${{ github.event.client_payload.path }}
-          TAG: ${{ github.event.client_payload.tag }}
-          SHA: ${{ github.event.client_payload.sha }}
+          SERVICE: ${{ github.event.client_payload.path || inputs.path }}
+          TAG: ${{ github.event.client_payload.tag || inputs.tag }}
+          SHA: ${{ github.event.client_payload.sha || inputs.sha }}
         run: |
           set -euo pipefail
           if [ "$(git config -f .gitmodules --get "submodule.$SERVICE.path" || true)" != "$SERVICE" ]; then
@@ -36,7 +47,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git update-index --cacheinfo "160000,$SHA,$SERVICE"
-          if git diff --cached --quiet; then
+          # .gitmodules sets ignore = all, which would otherwise hide the gitlink change.
+          if git diff --cached --quiet --ignore-submodules=none; then
             echo "$SERVICE already at $SHA"
             exit 0
           fi
